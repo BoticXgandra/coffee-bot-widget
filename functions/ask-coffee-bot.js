@@ -28,7 +28,7 @@ exports.handler = async function(event, context) {
                 'Authorization': `Bearer ${apiKey}` // The key is added here, safely on the server
             },
             body: JSON.stringify({
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-4o-mini', // <-- This line has been updated
                 messages: conversation,
                 max_tokens: 300,
                 temperature: 0.7
