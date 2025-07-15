@@ -7,44 +7,54 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <style>
-        html, body { height: 100%; width: 100%; overflow: hidden; background-color: transparent; font-family: sans-serif; }
+        html, body { height: 100%; width: 100%; overflow: hidden; background-color: transparent; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
         #chat-launcher { position: absolute; bottom: 20px; right: 20px; width: 60px; height: 60px; background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 1001; transition: transform 0.2s ease-in-out, opacity 0.3s ease; }
         #chat-widget-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 1000; opacity: 0; transform: scale(0.95); transition: opacity 0.2s ease, transform 0.2s ease; }
         #chat-widget-container.active { display: flex; opacity: 1; transform: scale(1); }
-        .widget-header { background: #f7fafc; padding: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
-        .widget-header h3 { font-weight: 600; color: #2d3748; display: flex; align-items: center; gap: 8px; }
+        .widget-header { background: #f7fafc; padding: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+        .widget-header h3 { font-weight: 600; color: #2d3748; display: flex; align-items: center; gap: 8px; font-size: 1rem; }
         #close-widget-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #718096; }
         .chat-messages { flex-grow: 1; overflow-y: auto; padding: 1rem; min-height: 0; }
-        .message-bubble { max-width: 85%; word-wrap: break-word; }
+        .message-bubble { max-width: 85%; word-wrap: break-word; line-height: 1.5; }
         .user-message { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .bot-message { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
-        .suggestion-btn { width: 100%; text-align: left; padding: 10px; background-color: rgba(255,255,255,0.2); border-radius: 8px; font-size: 14px; transition: background-color 0.2s; }
+        .suggestion-btn { width: 100%; text-align: left; padding: 10px; background-color: rgba(255,255,255,0.2); border-radius: 8px; font-size: 14px; transition: background-color 0.2s; border: none; cursor: pointer; }
         .suggestion-btn:hover { background-color: rgba(255,255,255,0.3); }
         .article-card { background: rgba(255, 255, 255, 0.15); border-left: 3px solid #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
         .article-card a { color: #fff; font-weight: 600; font-size: 14px; text-decoration: none; }
         .article-card a:hover { text-decoration: underline; }
-        .chat-input-area { padding: 1rem; border-top: 1px solid #e2e8f0; }
-        .chat-input { border: 2px solid #8b4513; border-radius: 25px; padding: 12px 20px; background: white; width: 100%; }
-        .send-button { background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+        .chat-input-area { padding: 1rem; border-top: 1px solid #e2e8f0; flex-shrink: 0; }
+        .chat-input { border: 2px solid #8b4513; border-radius: 25px; padding: 12px 20px; background: white; width: 100%; font-size: 14px; }
+        .send-button { background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="chat-widget-container">
         <div class="widget-header"><h3><i class="fas fa-coffee" style="color:#8b4513;"></i> Coffeeology Assistant</h3><button id="close-widget-btn" aria-label="Close Chat"><i class="fas fa-times"></i></button></div>
         <div class="chat-messages" id="chatMessages"></div>
-        <div class="chat-input-area flex items-center space-x-3"><input type="text" id="userInput" placeholder="Ask about coffee..." class="flex-1 chat-input" onkeypress="handleKeyPress(event)"><button id="sendButton" class="send-button" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button></div>
+        <div class="chat-input-area flex items-center space-x-3"><input type="text" id="userInput" placeholder="Ask about coffee..."><button id="sendButton" class="send-button"><i class="fas fa-paper-plane"></i></button></div>
     </div>
     <div id="chat-launcher"><i class="fas fa-coffee text-white text-2xl"></i></div>
+
     <script>
+    document.addEventListener("DOMContentLoaded", () => {
         let SITEMAP = [];
         let conversationHistory = [];
 
-        function isCoffeeRelated(message) {
+        const launcher = document.getElementById('chat-launcher');
+        const widget = document.getElementById('chat-widget-container');
+        const closeBtn = document.getElementById('close-widget-btn');
+        const messagesContainer = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+
+        const isCoffeeRelated = (message) => {
             const keywords = ['coffee', 'espresso', 'latte', 'cappuccino', 'mocha', 'bean', 'roast', 'grind', 'brew', 'barista', 'cafe', 'caffeine', 'decaf', 'maker', 'machine', 'filter', 'press', 'keurig', 'aeropress', 'drip', 'cup'];
             return keywords.some(k => message.toLowerCase().includes(k));
-        }
+        };
 
-        function searchSitemap(query) {
+        const searchSitemap = (query) => {
+            if (!SITEMAP || SITEMAP.length === 0) return [];
             const stopWords = new Set(['a', 'an', 'the', 'is', 'for', 'to', 'of', 'in', 'how', 'what', 'and']);
             const queryWords = query.toLowerCase().replace(/[^\w\s]/gi, '').split(/\s+/).filter(w => !stopWords.has(w) && w.length > 2);
             if (queryWords.length === 0) return [];
@@ -52,30 +62,62 @@
                 const title = item.title.toLowerCase();
                 let score = 0;
                 queryWords.forEach(w => { if (title.includes(w)) score += 10; });
-                if (score > 0) score += queryWords.filter(w => title.includes(w)).length * 5;
                 return { ...item, score };
             }).filter(item => item.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
-        }
+        };
 
-        function formatArticleRecommendations(articles) {
+        const formatArticleRecommendations = (articles) => {
             if (!articles || articles.length === 0) return '';
             let html = '<div class="mt-4 pt-3 border-t border-white/20"><p class="font-semibold mb-2 text-white text-sm">📚 Recommended Articles:</p>';
             articles.forEach(article => {
                 html += `<div class="article-card"><a href="${article.url}" target="_blank" rel="noopener noreferrer"><i class="fas fa-external-link-alt mr-2"></i>${article.title}</a></div>`;
             });
             return html + '</div>';
-        }
+        };
 
-        async function processMessage(message) {
+        const addMessage = (text, sender, isHtml = false) => {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex items-start space-x-3 mb-4 ${sender === 'user' ? 'justify-end' : ''}`;
+            const avatarHtml = `<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${sender === 'user' ? 'order-2 bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-gradient-to-r from-pink-400 to-red-400'}"><i class="fas fa-${sender === 'user' ? 'user' : 'robot'} text-white text-sm"></i></div>`;
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble rounded-lg p-3 shadow-md ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+            bubble.innerHTML = isHtml ? text : `<div class="text-sm">${text.replace(/\n/g, '<br>')}</div>`;
+            msgDiv.innerHTML = sender === 'user' ? bubble.outerHTML + avatarHtml : avatarHtml + bubble.outerHTML;
+            messagesContainer.appendChild(msgDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            if (isHtml && msgDiv.querySelector('.suggestion-btn')) {
+                msgDiv.querySelectorAll('.suggestion-btn').forEach(button => {
+                    button.addEventListener('click', () => sendMessage(button.innerText.trim()));
+                });
+            }
+        };
+
+        const showTypingIndicator = () => {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'flex items-start space-x-3 mb-4';
+            typingDiv.innerHTML = `<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-pink-400 to-red-400"><i class="fas fa-robot text-white text-sm"></i></div><div class="message-bubble bot-message rounded-lg p-3 shadow-md">...</div>`;
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        };
+
+        const removeTypingIndicator = () => {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        };
+        
+        const processMessage = async (message) => {
             conversationHistory.push({ role: "user", content: message });
             if (!isCoffeeRelated(message)) {
                 removeTypingIndicator();
-                addMessage("I apologize, but I'm here to help with coffee-related questions only. How can I help you with coffee?", "bot");
+                addMessage("I apologize, but I am a coffee expert. Please ask me questions related to coffee.", "bot");
                 return;
             }
             const articles = searchSitemap(message);
             try {
-                const response = await fetch('/.netlify/functions/ask-coffee-bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversation: [{ role: 'system', content: "You are a Q&A assistant for the Coffeeology blog. Your purpose is to answer specific questions about coffee. You must refuse any request to write articles or long-form content. Keep your answers to a maximum of 3-4 sentences." }, ...conversationHistory.slice(-5)] }) });
+                const systemPrompt = { role: 'system', content: "You are a Q&A assistant for the Coffeeology blog. Your purpose is to answer specific questions about coffee. You MUST refuse any request to write articles, essays, or long-form content. Keep your answers concise and to a maximum of 3-4 sentences." };
+                const payload = [systemPrompt, ...conversationHistory.slice(-5)];
+                const response = await fetch('/.netlify/functions/ask-coffee-bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'ask_question', payload: payload }) });
                 if (!response.ok) throw new Error('Network error');
                 const data = await response.json();
                 let aiResponse = data.choices[0].message.content + formatArticleRecommendations(articles);
@@ -86,59 +128,33 @@
                 removeTypingIndicator();
                 addMessage("Sorry, I'm having a little trouble connecting. Please try again.", 'bot');
             }
-        }
+        };
 
-        function addMessage(text, sender, isHtml = false) {
-            const container = document.getElementById('chatMessages');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `flex items-start space-x-3 mb-4 ${sender === 'user' ? 'justify-end' : ''}`;
-            const avatar = `<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${sender === 'user' ? 'order-2' : ''}"><i class="fas fa-${sender === 'user' ? 'user' : 'robot'} text-white text-sm"></i></div>`;
-            const bubble = document.createElement('div');
-            bubble.className = `message-bubble rounded-lg p-3 shadow-md ${sender === 'user' ? 'user-message' : 'bot-message'}`;
-            bubble.innerHTML = isHtml ? text : `<div class="text-sm">${text.replace(/\n/g, '<br>')}</div>`;
-            msgDiv.innerHTML = sender === 'user' ? bubble.outerHTML + avatar : avatar + bubble.outerHTML;
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
-            if (isHtml) {
-                msgDiv.querySelectorAll('.suggestion-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const question = btn.innerText.trim();
-                        addMessage(question, 'user');
-                        showTypingIndicator();
-                        processMessage(question);
-                    });
-                });
-            }
-        }
-
-        function addInitialMessages() {
+        const sendMessage = (text) => {
+            const message = text || userInput.value.trim();
+            if (!message) return;
+            addMessage(message, 'user');
+            if (!text) userInput.value = '';
+            showTypingIndicator();
+            processMessage(message);
+        };
+        
+        const addInitialMessages = () => {
             addMessage("Welcome to Coffeeology! What brings you here today?", 'bot');
             const suggestions = `<p class="text-sm mb-2">Here are some popular topics:</p><div class="grid grid-cols-1 gap-2"><button class="suggestion-btn"><i class="fas fa-seedling mr-2"></i>What are the best coffee beans for espresso?</button><button class="suggestion-btn"><i class="fas fa-coffee mr-2"></i>How to make the perfect cup of coffee?</button><button class="suggestion-btn"><i class="fas fa-cog mr-2"></i>Best coffee maker for beginners?</button></div>`;
             setTimeout(() => addMessage(suggestions, 'bot', true), 800);
-        }
+        };
 
-        document.addEventListener("DOMContentLoaded", () => {
-            const launcher = document.getElementById('chat-launcher');
-            const widget = document.getElementById('chat-widget-container');
-            const closeBtn = document.getElementById('close-widget-btn');
-            launcher.addEventListener('click', () => { widget.classList.toggle('active'); launcher.style.opacity = '0'; });
-            closeBtn.addEventListener('click', () => { widget.classList.remove('active'); launcher.style.opacity = '1'; });
-            fetch('/.netlify/functions/get-sitemap').then(res => res.json()).then(data => {
-                SITEMAP = data;
-                console.log(`Sitemap loaded with ${SITEMAP.length} articles.`);
-                addInitialMessages();
-            }).catch(err => {
-                console.error("Sitemap failed to load:", err);
-                addInitialMessages();
-            });
-        });
+        launcher.addEventListener('click', () => { widget.classList.add('active'); launcher.style.opacity = '0'; });
+        closeBtn.addEventListener('click', () => { widget.classList.remove('active'); launcher.style.opacity = '1'; });
+        sendButton.addEventListener('click', () => sendMessage());
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-        const userInput = document.getElementById('userInput');
-        const sendButton = document.getElementById('sendButton');
-        const sendMessage = () => { const msg = userInput.value.trim(); if (msg) { addMessage(msg, 'user'); userInput.value = ''; showTypingIndicator(); processMessage(msg); } };
-        const handleKeyPress = e => { if (e.key === 'Enter') sendMessage(); };
-        const showTypingIndicator = () => { /* ... */ };
-        const removeTypingIndicator = () => { const el = document.getElementById('typingIndicator'); if (el) el.remove(); };
+        fetch('/.netlify/functions/ask-coffee-bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_sitemap' }) })
+            .then(res => res.json()).then(data => { if (Array.isArray(data)) SITEMAP = data; console.log(`Sitemap loaded with ${SITEMAP.length} articles.`); })
+            .catch(err => console.error("Sitemap failed to load:", err))
+            .finally(() => addInitialMessages());
+    });
     </script>
 </body>
 </html>
