@@ -1,24 +1,7 @@
 // This is the secure backend function.
 const fetch = require('node-fetch');
 
-// --- NEW: Add your allowed domains here ---
-const ALLOWED_ORIGINS = [
-    'https://coffeeologyblog.com',
-    'https://www.coffeeologyblog.com',
-    'https://effulgent-tulumba-7dd114.netlify.app' // Your Netlify preview URL
-];
-
 exports.handler = async function(event, context) {
-    // --- NEW: Domain Security Check ---
-    const origin = event.headers.origin;
-    if (!ALLOWED_ORIGINS.includes(origin)) {
-        return {
-            statusCode: 403,
-            body: 'Forbidden: Invalid origin.'
-        };
-    }
-
-    // Only allow POST requests
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
@@ -31,7 +14,6 @@ exports.handler = async function(event, context) {
             throw new Error('API key is not configured.');
         }
 
-        // The rest of the function remains the same
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -40,11 +22,22 @@ exports.handler = async function(event, context) {
             },
             body: JSON.stringify({
                 model: 'gpt-4o-mini',
-                messages: conversation,
-                max_tokens: 300,
-                temperature: 0.7
+                messages: [
+                    {
+                        role: 'system',
+                        // 1. Stricter instructions to refuse article writing
+                        content: "You are a Q&A assistant for the Coffeeology blog. Your purpose is to answer specific questions about coffee. You must refuse any request to write articles, essays, blogs, or long-form content. Keep your answers concise, helpful, and to a maximum of 3-4 sentences."
+                    },
+                    ...conversation
+                ],
+                // 2. Hard limit on response length
+                max_tokens: 100
             })
         });
+
+        if (!response.ok) {
+            throw new Error('Failed to get response from OpenAI.');
+        }
         
         const data = await response.json();
         
@@ -54,7 +47,7 @@ exports.handler = async function(event, context) {
         };
 
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Handler Error:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'An internal error occurred.' })
