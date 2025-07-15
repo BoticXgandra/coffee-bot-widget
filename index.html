@@ -18,6 +18,11 @@
         .message-bubble { max-width: 85%; word-wrap: break-word; }
         .user-message { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .bot-message { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .suggestion-btn { width: 100%; text-align: left; padding: 10px; background-color: rgba(255,255,255,0.2); border-radius: 8px; font-size: 14px; transition: background-color 0.2s; }
+        .suggestion-btn:hover { background-color: rgba(255,255,255,0.3); }
+        .article-card { background: rgba(255, 255, 255, 0.15); border-left: 3px solid #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+        .article-card a { color: #fff; font-weight: 600; font-size: 14px; text-decoration: none; }
+        .article-card a:hover { text-decoration: underline; }
         .chat-input-area { padding: 1rem; border-top: 1px solid #e2e8f0; }
         .chat-input { border: 2px solid #8b4513; border-radius: 25px; padding: 12px 20px; background: white; width: 100%; }
         .send-button { background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
@@ -31,17 +36,109 @@
     </div>
     <div id="chat-launcher"><i class="fas fa-coffee text-white text-2xl"></i></div>
     <script>
-        // All JavaScript functions go here... (This should be the full script from our previous conversations)
+        let SITEMAP = [];
+        let conversationHistory = [];
+
+        function isCoffeeRelated(message) {
+            const keywords = ['coffee', 'espresso', 'latte', 'cappuccino', 'mocha', 'bean', 'roast', 'grind', 'brew', 'barista', 'cafe', 'caffeine', 'decaf', 'maker', 'machine', 'filter', 'press', 'keurig', 'aeropress', 'drip', 'cup'];
+            return keywords.some(k => message.toLowerCase().includes(k));
+        }
+
+        function searchSitemap(query) {
+            const stopWords = new Set(['a', 'an', 'the', 'is', 'for', 'to', 'of', 'in', 'how', 'what', 'and']);
+            const queryWords = query.toLowerCase().replace(/[^\w\s]/gi, '').split(/\s+/).filter(w => !stopWords.has(w) && w.length > 2);
+            if (queryWords.length === 0) return [];
+            return SITEMAP.map(item => {
+                const title = item.title.toLowerCase();
+                let score = 0;
+                queryWords.forEach(w => { if (title.includes(w)) score += 10; });
+                if (score > 0) score += queryWords.filter(w => title.includes(w)).length * 5;
+                return { ...item, score };
+            }).filter(item => item.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+        }
+
+        function formatArticleRecommendations(articles) {
+            if (!articles || articles.length === 0) return '';
+            let html = '<div class="mt-4 pt-3 border-t border-white/20"><p class="font-semibold mb-2 text-white text-sm">📚 Recommended Articles:</p>';
+            articles.forEach(article => {
+                html += `<div class="article-card"><a href="${article.url}" target="_blank" rel="noopener noreferrer"><i class="fas fa-external-link-alt mr-2"></i>${article.title}</a></div>`;
+            });
+            return html + '</div>';
+        }
+
+        async function processMessage(message) {
+            conversationHistory.push({ role: "user", content: message });
+            if (!isCoffeeRelated(message)) {
+                removeTypingIndicator();
+                addMessage("I apologize, but I'm here to help with coffee-related questions only. How can I help you with coffee?", "bot");
+                return;
+            }
+            const articles = searchSitemap(message);
+            try {
+                const response = await fetch('/.netlify/functions/ask-coffee-bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversation: [{ role: 'system', content: "You are a Q&A assistant for the Coffeeology blog. Your purpose is to answer specific questions about coffee. You must refuse any request to write articles or long-form content. Keep your answers to a maximum of 3-4 sentences." }, ...conversationHistory.slice(-5)] }) });
+                if (!response.ok) throw new Error('Network error');
+                const data = await response.json();
+                let aiResponse = data.choices[0].message.content + formatArticleRecommendations(articles);
+                conversationHistory.push({ role: "assistant", content: aiResponse });
+                removeTypingIndicator();
+                addMessage(aiResponse, 'bot');
+            } catch (error) {
+                removeTypingIndicator();
+                addMessage("Sorry, I'm having a little trouble connecting. Please try again.", 'bot');
+            }
+        }
+
+        function addMessage(text, sender, isHtml = false) {
+            const container = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex items-start space-x-3 mb-4 ${sender === 'user' ? 'justify-end' : ''}`;
+            const avatar = `<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${sender === 'user' ? 'order-2' : ''}"><i class="fas fa-${sender === 'user' ? 'user' : 'robot'} text-white text-sm"></i></div>`;
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble rounded-lg p-3 shadow-md ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+            bubble.innerHTML = isHtml ? text : `<div class="text-sm">${text.replace(/\n/g, '<br>')}</div>`;
+            msgDiv.innerHTML = sender === 'user' ? bubble.outerHTML + avatar : avatar + bubble.outerHTML;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+            if (isHtml) {
+                msgDiv.querySelectorAll('.suggestion-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const question = btn.innerText.trim();
+                        addMessage(question, 'user');
+                        showTypingIndicator();
+                        processMessage(question);
+                    });
+                });
+            }
+        }
+
+        function addInitialMessages() {
+            addMessage("Welcome to Coffeeology! What brings you here today?", 'bot');
+            const suggestions = `<p class="text-sm mb-2">Here are some popular topics:</p><div class="grid grid-cols-1 gap-2"><button class="suggestion-btn"><i class="fas fa-seedling mr-2"></i>What are the best coffee beans for espresso?</button><button class="suggestion-btn"><i class="fas fa-coffee mr-2"></i>How to make the perfect cup of coffee?</button><button class="suggestion-btn"><i class="fas fa-cog mr-2"></i>Best coffee maker for beginners?</button></div>`;
+            setTimeout(() => addMessage(suggestions, 'bot', true), 800);
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             const launcher = document.getElementById('chat-launcher');
             const widget = document.getElementById('chat-widget-container');
             const closeBtn = document.getElementById('close-widget-btn');
-
             launcher.addEventListener('click', () => { widget.classList.toggle('active'); launcher.style.opacity = '0'; });
             closeBtn.addEventListener('click', () => { widget.classList.remove('active'); launcher.style.opacity = '1'; });
-
-            // The rest of your script, including addInitialMessages, processMessage, etc.
+            fetch('/.netlify/functions/get-sitemap').then(res => res.json()).then(data => {
+                SITEMAP = data;
+                console.log(`Sitemap loaded with ${SITEMAP.length} articles.`);
+                addInitialMessages();
+            }).catch(err => {
+                console.error("Sitemap failed to load:", err);
+                addInitialMessages();
+            });
         });
+
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const sendMessage = () => { const msg = userInput.value.trim(); if (msg) { addMessage(msg, 'user'); userInput.value = ''; showTypingIndicator(); processMessage(msg); } };
+        const handleKeyPress = e => { if (e.key === 'Enter') sendMessage(); };
+        const showTypingIndicator = () => { /* ... */ };
+        const removeTypingIndicator = () => { const el = document.getElementById('typingIndicator'); if (el) el.remove(); };
     </script>
 </body>
 </html>
