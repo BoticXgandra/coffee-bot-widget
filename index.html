@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffeeology Blog Agent</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        /* Widget and Chat Styles */
+        #chat-launcher { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 1000; transition: transform 0.2s ease-in-out; }
+        #chat-launcher:hover { transform: scale(1.1); }
+        #chat-widget-container { position: fixed; bottom: 100px; right: 25px; width: 375px; max-width: 90vw; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; z-index: 999; display: none; flex-direction: column; opacity: 0; transform: translateY(20px); transition: opacity 0.3s ease, transform 0.3s ease; }
+        #chat-widget-container.active { display: flex; opacity: 1; transform: translateY(0); }
+        .widget-header { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        .widget-header h3 { font-weight: bold; color: #333; }
+        #close-widget-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #555; }
+        .chat-messages { height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8b4513 #f5f7fa; }
+        .chat-messages::-webkit-scrollbar { width: 8px; }
+        .chat-messages::-webkit-scrollbar-track { background: #f5f7fa; }
+        .chat-messages::-webkit-scrollbar-thumb { background: #8b4513; border-radius: 4px; }
+        .message-bubble { max-width: 85%; word-wrap: break-word; }
+        .user-message { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .bot-message { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .chat-input { border: 2px solid #8b4513; border-radius: 25px; padding: 12px 20px; background: white; transition: all 0.3s ease; width: 100%; }
+        .chat-input:focus { outline: none; border-color: #d2691e; box-shadow: 0 0 0 3px rgba(210, 105, 30, 0.1); }
+        .send-button { background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: white; transition: all 0.3s ease; flex-shrink: 0; }
+        .send-button:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3); }
+    </style>
+</head>
+<body>
+    <div id="chat-launcher">
+        <i class="fas fa-coffee text-white text-2xl"></i>
+    </div>
+
+    <div id="chat-widget-container">
+        <div class="widget-header">
+            <h3 class="text-gray-800">Coffeeology Assistant</h3>
+            <button id="close-widget-btn" aria-label="Close Chat">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="p-4 flex-grow flex flex-col">
+            <div class="chat-messages mb-4" id="chatMessages">
+                </div>
+            <div class="flex items-center space-x-3 mt-auto">
+                <input type="text" id="userInput" placeholder="Ask about coffee..." class="flex-1 chat-input" onkeypress="handleKeyPress(event)">
+                <button id="sendButton" class="send-button" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let conversationHistory = [];
+
+        async function processMessage(message) {
+            conversationHistory.push({ role: 'user', content: message });
+            
+            try {
+                // This now calls your secure Netlify function. NO API KEY IS HERE.
+                const response = await fetch('/.netlify/functions/ask-coffee-bot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        conversation: [
+                            {
+                                role: 'system',
+                                content: 'You are a coffee expert assistant for Coffeeology blog. You provide helpful, accurate information about coffee, brewing methods, equipment, and coffee culture. Keep responses concise but informative. Always stay focused on coffee-related topics only.'
+                            },
+                            ...conversationHistory.slice(-5) // Keep last 5 messages for context
+                        ]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content;
+                
+                conversationHistory.push({ role: 'assistant', content: aiResponse });
+                removeTypingIndicator();
+                addMessage(aiResponse, 'bot');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                removeTypingIndicator();
+                addMessage("Sorry, I'm having a little trouble connecting. Please try again in a moment.", 'bot');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const launcher = document.getElementById('chat-launcher');
+            const widget = document.getElementById('chat-widget-container');
+            const closeBtn = document.getElementById('close-widget-btn');
+            
+            launcher.addEventListener('click', () => widget.classList.toggle('active'));
+            closeBtn.addEventListener('click', () => widget.classList.remove('active'));
+            
+            addInitialMessages();
+        });
+
+        function handleKeyPress(event) { 
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        function sendMessage() { 
+            const input = document.getElementById('userInput'); 
+            const message = input.value.trim(); 
+            if (!message) return; 
+            addMessage(message, 'user'); 
+            input.value = ''; 
+            showTypingIndicator(); 
+            processMessage(message); 
+        }
+
+        function addMessage(text, sender) { 
+            const messagesContainer = document.getElementById('chatMessages'); 
+            const messageDiv = document.createElement('div'); 
+            messageDiv.className = `flex items-start space-x-3 mb-4 ${sender === 'user' ? 'justify-end' : ''}`; 
+            const avatarHtml = `<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${sender === 'user' ? 'bg-gradient-to-r from-blue-500 to-purple-500 order-2' : 'bg-gradient-to-r from-pink-400 to-red-400'}"><i class="fas fa-${sender === 'user' ? 'user' : 'robot'} text-white text-sm"></i></div>`; 
+            const bubble = document.createElement('div'); 
+            bubble.className = `message-bubble ${sender === 'user' ? 'user-message' : 'bot-message'} rounded-lg p-3 shadow-md`; 
+            bubble.innerHTML = `<p class="text-sm">${text.replace(/\n/g, '<br>')}</p>`; // Basic markdown for new lines
+            messageDiv.innerHTML = sender === 'user' ? bubble.outerHTML + avatarHtml : avatarHtml + bubble.outerHTML; 
+            messagesContainer.appendChild(messageDiv); 
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; 
+        }
+
+        function showTypingIndicator() { 
+            const messagesContainer = document.getElementById('chatMessages'); 
+            const typingDiv = document.createElement('div'); 
+            typingDiv.id = 'typingIndicator'; 
+            typingDiv.className = 'flex items-start space-x-3 mb-4'; 
+            typingDiv.innerHTML = `<div class="w-8 h-8 bg-gradient-to-r from-pink-400 to-red-400 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-white text-sm"></i></div><div class="message-bubble bot-message rounded-lg p-3 shadow-md">...</div>`; 
+            messagesContainer.appendChild(typingDiv); 
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; 
+        }
+
+        function removeTypingIndicator() { 
+            const indicator = document.getElementById('typingIndicator'); 
+            if (indicator) indicator.remove(); 
+        }
+        
+        function addInitialMessages() { 
+            addMessage("Welcome to Coffeeology! How can I help you with your coffee questions today?", 'bot'); 
+        }
+    </script>
+</body>
+</html>
