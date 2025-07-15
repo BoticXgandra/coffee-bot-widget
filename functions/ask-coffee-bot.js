@@ -1,43 +1,53 @@
 // This is the secure backend function.
-// It runs on a server, not in the user's browser.
-
 const fetch = require('node-fetch');
 
+// --- NEW: Add your allowed domains here ---
+const ALLOWED_ORIGINS = [
+    'https://coffeeologyblog.com',
+    'https://www.coffeeologyblog.com',
+    'https://effulgent-tulumba-7dd114.netlify.app' // Your Netlify preview URL
+];
+
 exports.handler = async function(event, context) {
+    // --- NEW: Domain Security Check ---
+    const origin = event.headers.origin;
+    if (!ALLOWED_ORIGINS.includes(origin)) {
+        return {
+            statusCode: 403,
+            body: 'Forbidden: Invalid origin.'
+        };
+    }
+
     // Only allow POST requests
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
     try {
-        // Get the user's message from the request sent by the widget
         const { conversation } = JSON.parse(event.body);
-
-        // Your secret API key is stored securely as an environment variable
         const apiKey = process.env.OPENAI_API_KEY;
 
         if (!apiKey) {
             throw new Error('API key is not configured.');
         }
 
-        // Call the OpenAI API from the secure server
+        // The rest of the function remains the same
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}` // The key is added here, safely on the server
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini', // <-- This line has been updated
+                model: 'gpt-4o-mini',
                 messages: conversation,
                 max_tokens: 300,
                 temperature: 0.7
             })
         });
-
+        
         const data = await response.json();
-
-        // Send the response from OpenAI back to the widget
+        
         return {
             statusCode: 200,
             body: JSON.stringify(data)
