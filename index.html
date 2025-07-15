@@ -1,54 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coffeeology Blog Agent</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    <style>
-        html, body { height: 100%; width: 100%; overflow: hidden; background-color: transparent; font-family: sans-serif; }
-        #chat-launcher { position: absolute; bottom: 20px; right: 20px; width: 60px; height: 60px; background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 1001; transition: transform 0.2s ease-in-out, opacity 0.3s ease; }
-        #chat-widget-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 1000; opacity: 0; transform: scale(0.95); transition: opacity 0.2s ease, transform 0.2s ease; }
-        #chat-widget-container.active { display: flex; opacity: 1; transform: scale(1); }
-        .widget-header { background: #f7fafc; padding: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
-        .widget-header h3 { font-weight: 600; color: #2d3748; display: flex; align-items: center; gap: 8px; }
-        #close-widget-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #718096; }
-        .chat-messages { flex-grow: 1; overflow-y: auto; padding: 1rem; min-height: 0; }
-        .message-bubble { max-width: 85%; word-wrap: break-word; }
-        .user-message { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .bot-message { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
-        .suggestion-btn { width: 100%; text-align: left; padding: 10px; background-color: rgba(255,255,255,0.2); border-radius: 8px; font-size: 14px; transition: background-color 0.2s; }
-        .suggestion-btn:hover { background-color: rgba(255,255,255,0.3); }
-        .article-card { background: rgba(255, 255, 255, 0.15); border-left: 3px solid #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
-        .article-card a { color: #fff; font-weight: 600; font-size: 14px; text-decoration: none; }
-        .article-card a:hover { text-decoration: underline; }
-        .chat-input-area { padding: 1rem; border-top: 1px solid #e2e8f0; }
-        .chat-input { border: 2px solid #8b4513; border-radius: 25px; padding: 12px 20px; background: white; width: 100%; }
-        .send-button { background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
-    </style>
-</head>
+<head>...</head>
 <body>
-    <div id="chat-widget-container">
-        <div class="widget-header"><h3><i class="fas fa-coffee" style="color:#8b4513;"></i> Coffeeology Assistant</h3><button id="close-widget-btn" aria-label="Close Chat"><i class="fas fa-times"></i></button></div>
-        <div class="chat-messages" id="chatMessages"></div>
-        <div class="chat-input-area flex items-center space-x-3"><input type="text" id="userInput" placeholder="Ask about coffee..." class="flex-1 chat-input" onkeypress="handleKeyPress(event)"><button id="sendButton" class="send-button" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button></div>
-    </div>
-    <div id="chat-launcher"><i class="fas fa-coffee text-white text-2xl"></i></div>
+    <div id="chat-widget-container">...</div>
+    <div id="chat-launcher">...</div>
+
     <script>
-        const SITEMAP = [{url:"https://coffeeologyblog.com/best-coffee-beans-for-espresso-machines/",title:"Best Coffee Beans for Espresso Machines"},{url:"https://coffeeologyblog.com/selecting-coffee-beans-for-home-brewing/",title:"Selecting Coffee Beans for Home Brewing"},{url:"https://coffeeologyblog.com/best-espresso-machine-friendly-coffee-beans/",title:"Best Espresso Machine Friendly Coffee Beans"},{url:"https://coffeeologyblog.com/best-coffee-beans-for-home-brewing-mastery/",title:"Best Coffee Beans for Home Brewing Mastery"},{url:"https://coffeeologyblog.com/best-5-coffee-beans-for-home-brewing-excellence/",title:"Best 5 Coffee Beans for Home Brewing Excellence"},{url:"https://coffeeologyblog.com/organic-coffee-beans-for-coffee-makers/",title:"Organic Coffee Beans for Coffee Makers"},{url:"https://coffeeologyblog.com/how-to-choose-coffee-beans-for-latte/",title:"How to Choose Coffee Beans for Latte"},{url:"https://coffeeologyblog.com/choosing-the-right-roast-for-coffee-machines/",title:"Choosing the Right Roast for Coffee Machines"},{url:"https://coffeeologyblog.com/guide-to-coffee-bean-selection-for-cappuccino/",title:"Guide to Coffee Bean Selection for Cappuccino"},{url:"https://coffeeologyblog.com/comparing-coffee-beans-for-french-press/",title:"Comparing Coffee Beans for French Press"},{url:"https://coffeeologyblog.com/best-coffee-beans-for-barista-excellence/",title:"Best Coffee Beans for Barista Excellence"},{url:"https://coffeeologyblog.com/what-makes-the-perfect-cup-of-coffee/",title:"What Makes the Perfect Cup of Coffee?"},{url:"https://coffeeologyblog.com/best-coffee-maker-under-50/",title:"Best Coffee Maker Under $50"},{url:"https://coffeeologyblog.com/best-coffee-maker-for-beginners/",title:"What's the best coffee maker for beginners?"}];
-        let conversationHistory = [];
-        function isCoffeeRelated(e){const o=["coffee","espresso","latte","cappuccino","mocha","bean","roast","grind","brew","barista","cafe","caffeine","decaf","maker","machine","filter","press","keurig","aeropress","drip","cup"];return o.some(o=>e.toLowerCase().includes(o))}
-        function searchSitemap(e){const o=new Set(["a","an","the","is","are","for","to","of","in","how","what","and","or","you"]),t=e.toLowerCase().replace(/[^\w\s]/gi,"").split(/\s+/).filter(e=>!o.has(e)&&e.length>2);if(0===t.length)return[];const n=SITEMAP.map(e=>{const o=e.title.toLowerCase();let n=0;return t.forEach(e=>{o.includes(e)&&(n+=10)}),n>0&&(n+=5*t.filter(e=>o.includes(e)).length),{...e,score:n}}).filter(e=>e.score>0).sort((e,o)=>o.score-e.score);return n.slice(0,3)}
-        function formatArticleRecommendations(e){if(!e||0===e.length)return"";let o='<div class="mt-4 pt-3 border-t border-white/20"><p class="font-semibold mb-2 text-white text-sm">📚 Recommended Articles:</p>';return e.forEach(e=>{o+=`<div class="article-card"><a href="${e.url}" target="_blank" rel="noopener noreferrer"><i class="fas fa-external-link-alt mr-2"></i>${e.title}</a></div>`}),o+="</div>"}
-        async function processMessage(e){if(conversationHistory.push({role:"user",content:e}),!isCoffeeRelated(e)){removeTypingIndicator();const o="I apologize, but I'm here to help with coffee-related questions only. Let me help you discover something amazing about coffee instead! What would you like to know about coffee brewing, beans, or equipment?";return void addMessage(o,"bot")}const o=searchSitemap(e);try{const t=await fetch("/.netlify/functions/ask-coffee-bot",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversation:[{role:"system",content:"You are a friendly coffee expert for Coffeeology blog. Answer the user's question concisely. After answering, if relevant articles are provided, smoothly transition to recommending them."},...conversationHistory.slice(-5)]})});if(!t.ok)throw new Error("Server error");const n=await t.json();let s=n.choices[0].message.content;s+=formatArticleRecommendations(o),conversationHistory.push({role:"assistant",content:s}),removeTypingIndicator(),addMessage(s,"bot")}catch(e){removeTypingIndicator(),addMessage("Sorry, I'm having a little trouble. Please try again.","bot")}}
-        function addMessage(e,o,t=!1){const n=document.getElementById("chatMessages"),s=document.createElement("div");s.className=`flex items-start space-x-3 mb-4 ${"user"===o?"justify-end":""}`;const c=`<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${"user"===o?"bg-gradient-to-r from-blue-500 to-purple-500 order-2":"bg-gradient-to-r from-pink-400 to-red-400"}"><i class="fas fa-${"user"===o?"user":"robot"} text-white text-sm"></i></div>`,a=document.createElement("div");a.className=`message-bubble ${"user"===o?"user-message":"bot-message"} rounded-lg p-3 shadow-md`,a.innerHTML=t?e:`<div class="text-sm">${e.replace(/\n/g,"<br>")}</div>`,s.innerHTML="user"===o?a.outerHTML+c:c+a.outerHTML,n.appendChild(s),n.scrollTop=n.scrollHeight,t&&s.querySelectorAll(".suggestion-btn").forEach(e=>{e.addEventListener("click",()=>{const o=e.innerText.trim();addMessage(o,"user"),showTypingIndicator(),processMessage(o)})})}
-        document.addEventListener("DOMContentLoaded",()=>{const e=document.getElementById("chat-launcher"),o=document.getElementById("chat-widget-container"),t=document.getElementById("close-widget-btn");e.addEventListener("click",()=>{o.classList.toggle("active"),e.style.opacity="0"}),t.addEventListener("click",()=>{o.classList.remove("active"),e.style.opacity="1"}),addInitialMessages()});
-        function addInitialMessages(){addMessage("Welcome to Coffeeology! What brings you here today? Let me know if you have any questions about coffee, brewing, or finding the perfect machine.","bot");const e=`<p class="text-sm mb-2">Here are some popular topics you might be interested in:</p><div class="grid grid-cols-1 gap-2"><button class="suggestion-btn"><i class="fas fa-seedling mr-2"></i>What are the best coffee beans for espresso?</button><button class="suggestion-btn"><i class="fas fa-coffee mr-2"></i>How to make the perfect cup of coffee at home?</button><button class="suggestion-btn"><i class="fas fa-cog mr-2"></i>What's the best coffee maker for beginners?</button></div>`;setTimeout(()=>addMessage(e,"bot",!0),800)}
-        function sendMessage(){const e=document.getElementById("userInput"),o=e.value.trim();o&&(addMessage(o,"user"),e.value="",showTypingIndicator(),processMessage(o))}
-        function handleKeyPress(e){"Enter"===e.key&&sendMessage()}
-        function showTypingIndicator(){const e=document.getElementById("chatMessages"),o=document.createElement("div");o.id="typingIndicator",o.className="flex items-start space-x-3 mb-4",o.innerHTML='<div class="w-8 h-8 bg-gradient-to-r from-pink-400 to-red-400 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-white text-sm"></i></div><div class="message-bubble bot-message rounded-lg p-3 shadow-md">...</div>',e.appendChild(o),e.scrollTop=e.scrollHeight}
-        function removeTypingIndicator(){const e=document.getElementById("typingIndicator");e&&e.remove()}
+        // --- SITEMAP DATA IS NOW LOADED DYNAMICALLY ---
+        let SITEMAP = []; // Start with an empty sitemap
+
+        // All other functions (isCoffeeRelated, searchSitemap, etc.) remain the same...
+
+        // --- UPDATED: Load sitemap automatically when the widget starts ---
+        document.addEventListener("DOMContentLoaded", () => {
+            const launcher = document.getElementById('chat-launcher');
+            const widget = document.getElementById('chat-widget-container');
+            const closeBtn = document.getElementById('close-widget-btn');
+
+            launcher.addEventListener("click", () => { /* ... */ });
+            closeBtn.addEventListener("click", () => { /* ... */ });
+            
+            // Fetch the live sitemap
+            fetch('/.netlify/functions/get-sitemap')
+                .then(response => response.json())
+                .then(data => {
+                    SITEMAP = data;
+                    console.log(`Sitemap loaded with ${SITEMAP.length} articles.`);
+                    addInitialMessages(); // Show initial messages only after sitemap is loaded
+                })
+                .catch(error => {
+                    console.error('Failed to load sitemap:', error);
+                    addInitialMessages(); // Still show initial messages even if sitemap fails
+                });
+        });
+
+        // The rest of your JavaScript functions go here (addInitialMessages, processMessage, etc.)
+        // ...
     </script>
 </body>
 </html>
