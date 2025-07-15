@@ -1,41 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>...</head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffeeology Blog Agent</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        html, body { height: 100%; width: 100%; overflow: hidden; background-color: transparent; font-family: sans-serif; }
+        #chat-launcher { position: absolute; bottom: 20px; right: 20px; width: 60px; height: 60px; background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 1001; transition: transform 0.2s ease-in-out, opacity 0.3s ease; }
+        #chat-widget-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 1000; opacity: 0; transform: scale(0.95); transition: opacity 0.2s ease, transform 0.2s ease; }
+        #chat-widget-container.active { display: flex; opacity: 1; transform: scale(1); }
+        .widget-header { background: #f7fafc; padding: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        .widget-header h3 { font-weight: 600; color: #2d3748; display: flex; align-items: center; gap: 8px; }
+        #close-widget-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #718096; }
+        .chat-messages { flex-grow: 1; overflow-y: auto; padding: 1rem; min-height: 0; }
+        .message-bubble { max-width: 85%; word-wrap: break-word; }
+        .user-message { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .bot-message { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .chat-input-area { padding: 1rem; border-top: 1px solid #e2e8f0; }
+        .chat-input { border: 2px solid #8b4513; border-radius: 25px; padding: 12px 20px; background: white; width: 100%; }
+        .send-button { background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    </style>
+</head>
 <body>
-    <div id="chat-widget-container">...</div>
-    <div id="chat-launcher">...</div>
-
+    <div id="chat-widget-container">
+        <div class="widget-header"><h3><i class="fas fa-coffee" style="color:#8b4513;"></i> Coffeeology Assistant</h3><button id="close-widget-btn" aria-label="Close Chat"><i class="fas fa-times"></i></button></div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area flex items-center space-x-3"><input type="text" id="userInput" placeholder="Ask about coffee..." class="flex-1 chat-input" onkeypress="handleKeyPress(event)"><button id="sendButton" class="send-button" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button></div>
+    </div>
+    <div id="chat-launcher"><i class="fas fa-coffee text-white text-2xl"></i></div>
     <script>
-        // --- SITEMAP DATA IS NOW LOADED DYNAMICALLY ---
-        let SITEMAP = []; // Start with an empty sitemap
-
-        // All other functions (isCoffeeRelated, searchSitemap, etc.) remain the same...
-
-        // --- UPDATED: Load sitemap automatically when the widget starts ---
+        // All JavaScript functions go here... (This should be the full script from our previous conversations)
         document.addEventListener("DOMContentLoaded", () => {
             const launcher = document.getElementById('chat-launcher');
             const widget = document.getElementById('chat-widget-container');
             const closeBtn = document.getElementById('close-widget-btn');
 
-            launcher.addEventListener("click", () => { /* ... */ });
-            closeBtn.addEventListener("click", () => { /* ... */ });
-            
-            // Fetch the live sitemap
-            fetch('/.netlify/functions/get-sitemap')
-                .then(response => response.json())
-                .then(data => {
-                    SITEMAP = data;
-                    console.log(`Sitemap loaded with ${SITEMAP.length} articles.`);
-                    addInitialMessages(); // Show initial messages only after sitemap is loaded
-                })
-                .catch(error => {
-                    console.error('Failed to load sitemap:', error);
-                    addInitialMessages(); // Still show initial messages even if sitemap fails
-                });
-        });
+            launcher.addEventListener('click', () => { widget.classList.toggle('active'); launcher.style.opacity = '0'; });
+            closeBtn.addEventListener('click', () => { widget.classList.remove('active'); launcher.style.opacity = '1'; });
 
-        // The rest of your JavaScript functions go here (addInitialMessages, processMessage, etc.)
-        // ...
+            // The rest of your script, including addInitialMessages, processMessage, etc.
+        });
     </script>
 </body>
 </html>
