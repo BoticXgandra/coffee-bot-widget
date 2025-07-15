@@ -1,6 +1,7 @@
-const fetch = require('node-fetch');
+// No longer needs 'node-fetch' because Netlify provides it.
 
 exports.handler = async function(event, context) {
+    // Only allow POST requests
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
@@ -26,9 +27,9 @@ exports.handler = async function(event, context) {
                         role: 'system',
                         content: "You are a Q&A assistant for the Coffeeology blog. Your purpose is to answer specific questions about coffee. You MUST refuse any request to write articles, essays, or long-form content. Keep your answers concise and to a maximum of 3-4 sentences."
                     },
-                    ...conversation.slice(-6) // Send system prompt + last 5 turns
+                    ...conversation.slice(-6)
                 ],
-                max_tokens: 150 // Increased slightly for better answers + recommendations
+                max_tokens: 150
             })
         });
 
